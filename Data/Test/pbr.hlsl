@@ -1,7 +1,8 @@
+#ifndef COMMON_BUILD
 struct PS_IN
 {
-	float3 Pos : POSITION;
-	float3 Nor : NORMAL;
+	float3 Position : POSITION;
+	float3 Normal : NORMAL;
 	floaT2 UV  : TEXCOORD;	
 };
 
@@ -12,6 +13,7 @@ cbuffer PBSConst : register(b0)
 	float4 baseColor;
 	float4 lightColor;
 };
+#endif
 
 const float PI = 3.14159265359;
 
@@ -60,3 +62,36 @@ float3 BRDF(float3 L, float3 V, float3 N, float metallic, float roughness)
 	}
 	return color;
 }
+
+#ifndef COMMON_BUILD
+
+void vs_main()
+{
+	
+}
+
+float4 fs_main(PS_IN ps_in) : SV_TARGET0
+{
+	float3 N = normalize(ps_in.Normal);
+	float3 V = normalize(ubo.camPos - ps_in.Position);
+
+	float roughness = roughness;
+
+	// Specular contribution
+	float3 Lo = float3(0.0);
+	for (int i = 0; i < uboParams.lights.length(); i++) {
+		vec3 L = normalize(uboParams.lights[i].xyz - inWorldPos);
+		Lo += BRDF(L, V, N, metallic, roughness);
+	};
+
+	// Combine with ambient
+	float3 color = materialcolor() * 0.02;
+	color += Lo;
+
+	// Gamma correct
+	color = pow(color, vec3(0.4545));
+
+	outColor = float4(color, 1.0);
+}
+
+#endif
